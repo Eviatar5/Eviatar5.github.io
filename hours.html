@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>מחשבון שעות</title>
+  <style>
+    body{font-family:Arial;max-width:720px;margin:40px auto;padding:0 16px}
+    .card{border:1px solid #ddd;border-radius:14px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+    h1{margin:0 0 12px}
+    label{display:block;margin:12px 0 6px;font-weight:700}
+    input{width:100%;padding:10px 12px;border:1px solid #ccc;border-radius:10px;font-size:16px}
+    button{margin-top:14px;padding:10px 14px;border:0;border-radius:10px;font-size:16px;cursor:pointer}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .result{margin-top:14px;padding:12px;border-radius:10px;background:#f6f6f6}
+    small{color:#555}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>מחשבון שעות ⏱️</h1>
+    <small>תומך גם ב"שעות ודקות". אפשר לכתוב: 15 שעות | 6 שעות, 51 דקות | 6:51 | 410 דקות</small>
+
+    <div class="row">
+      <div>
+        <label>כמה שעות צריך?</label>
+        <input id="need" placeholder='דוגמה: 15 שעות או 15:00' />
+      </div>
+      <div>
+        <label>כמה עשיתי עד עכשיו?</label>
+        <input id="done" placeholder='דוגמה: 6 שעות, 51 דקות או 6:51' />
+      </div>
+    </div>
+
+    <button id="calc">חשב כמה נשאר</button>
+
+    <div class="result" id="out" style="display:none;"></div>
+  </div>
+
+<script>
+  function parseToMinutes(text) {
+    if (!text) return NaN;
+    let s = String(text).trim().toLowerCase();
+
+    // תומך ב- hh:mm
+    const hm = s.match(/^\s*(\d+)\s*:\s*(\d{1,2})\s*$/);
+    if (hm) {
+      const h = parseInt(hm[1], 10);
+      const m = parseInt(hm[2], 10);
+      if (m >= 60) return NaN;
+      return h * 60 + m;
+    }
+
+    // מחלץ מספרי שעות/דקות מתוך טקסט בעברית/אנגלית, כולל פסיקים
+    // דוגמאות: "6 שעות, 51 דקות" / "15 שעות" / "410 דקות"
+    let hours = 0, minutes = 0;
+    const hMatch = s.match(/(\d+)\s*(שעה|שעות|hour|hours|h)\b/);
+    const mMatch = s.match(/(\d+)\s*(דקה|דקות|minute|minutes|min|m)\b/);
+
+    if (hMatch) hours = parseInt(hMatch[1], 10);
+    if (mMatch) minutes = parseInt(mMatch[1], 10);
+
+    // אם כתבו רק מספר בלי יחידה – נניח שזה שעות
+    if (!hMatch && !mMatch) {
+      const onlyNum = s.match(/^\s*(\d+)\s*$/);
+      if (onlyNum) return parseInt(onlyNum[1], 10) * 60;
+      return NaN;
+    }
+
+    return hours * 60 + minutes;
+  }
+
+  function fmtMinutes(totalMinutes) {
+    const sign = totalMinutes < 0 ? "-" : "";
+    const mins = Math.abs(totalMinutes);
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return `${sign}${h} שעות ו-${m} דקות`;
+  }
+
+  document.getElementById("calc").addEventListener("click", () => {
+    const needText = document.getElementById("need").value;
+    const doneText = document.getElementById("done").value;
+
+    const needMin = parseToMinutes(needText);
+    const doneMin = parseToMinutes(doneText);
+
+    const out = document.getElementById("out");
+    out.style.display = "block";
+
+    if (!Number.isFinite(needMin) || !Number.isFinite(doneMin)) {
+      out.innerHTML = "❌ לא הצלחתי להבין את הערכים. נסה למשל: <b>15 שעות</b> ו- <b>6 שעות, 51 דקות</b> או <b>6:51</b>";
+      return;
+    }
+
+    const left = needMin - doneMin;
+
+    if (left > 0) {
+      out.innerHTML = `✅ נשאר לך: <b>${fmtMinutes(left)}</b>`;
+    } else if (left === 0) {
+      out.innerHTML = `🎉 סיימת בדיוק! נשאר: <b>0 שעות ו-0 דקות</b>`;
+    } else {
+      out.innerHTML = `🔥 עברת את היעד ב: <b>${fmtMinutes(left)}</b>`;
+    }
+  });
+</script>
+</body>
+</html>
